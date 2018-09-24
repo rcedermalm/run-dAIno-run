@@ -37,19 +37,19 @@ var StateMain = {
         down_key = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
 
         ////////////////////////////////////////////////
-        // Get random obstacle
+        // Set random obstacles
         this.cacti = [3];
-        this.getRandomCactus();
+        this.bird = null;
     },
     getBird: function() {
-        if (this.bird) {
-            this.bird.destroy();
-        }
-        var birdY = game.rnd.integerInRange(game.height * .1, game.height * .4);
+        if(game.rnd.integerInRange(0, 500) > 1 || this.bird && this.bird.x > 0)
+            return;
+        var rand = game.rnd.integerInRange(0, 3);
+        var birdY = rand * game.height/4;
         this.bird = game.add.sprite(game.width + 100, birdY, "bird");
        
         game.physics.enable(this.bird, Phaser.Physics.ARCADE);
-        this.bird.body.velocity.x = game.rnd.integerInRange(-300, -100);;
+        this.bird.body.velocity.x = game.rnd.integerInRange(-50 + world_velocity, world_velocity - 50);;
         this.bird.body.bounce.set(2, 2);
     },
     getRandomCactus: function() {
@@ -83,6 +83,7 @@ var StateMain = {
         this.dino.body.velocity.y = 500;
     },
     gameOver: function() {
+
         game.state.start("StateOver");
     },
     update: function() {
@@ -104,9 +105,7 @@ var StateMain = {
 
         // Get obstacles
         this.getRandomCactus();
-
-        if (!this.bird || (this.bird.x < 0 && game.rnd.integerInRange(0, 100) < 2) )
-            this.getBird();
+        this.getBird();
             
     }
 }
