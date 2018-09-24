@@ -1,4 +1,4 @@
-var up_key, down_key; 
+var up_key, space_key, down_key, world_velocity = -250; 
 
 var StateMain = {
     preload: function() {
@@ -10,12 +10,10 @@ var StateMain = {
     },
     create: function() {
         game.stage.backgroundColor = "#ffffff";
-        //add the ground
+        
         this.ground = game.add.sprite(0, game.height * .9, "ground");
-        //add the dino
         this.dino = game.add.sprite(game.width*.05, 0, "dino");
         this.dino.y = this.ground.y - this.dino.height;
-        //record the initial position
         this.startY = this.dino.y;
 
         /////////////////////////////////////////////////
@@ -27,37 +25,30 @@ var StateMain = {
         game.physics.enable(this.dino, Phaser.Physics.ARCADE);
         game.physics.enable(this.ground, Phaser.Physics.ARCADE);
  
-        this.dino.body.gravity.y = 350;
+        this.dino.body.gravity.y = 1300;
+        this.dino.body.maxVelocity.y = 500;
         this.dino.body.collideWorldBounds = true;
         this.ground.body.immovable = true;
 
         /////////////////////////////////////////////////
-        // Input handlers
+        // Set keyboard input 
         up_key = game.input.keyboard.addKey(Phaser.Keyboard.UP);
+        space_key = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         down_key = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
 
-        up_key.onDown.add(this.jumpKeyDown, this);
-        down_key.onDown.add(this.duckKeyDown, this);
-
+        ////////////////////////////////////////////////
+        // Get random obstacle
         this.getRandomCactus();
-
-
     },
     getBird: function() {
-        //if the bird already exists destroy it
         if (this.bird) {
             this.bird.destroy();
         }
-        //pick a number at the top of the screen
-        //between 10 percent and 40 percent of the height of the screen
         var birdY = game.rnd.integerInRange(game.height * .1, game.height * .4);
-        //add the bird sprite to the game
         this.bird = game.add.sprite(game.width + 100, birdY, "bird");
-        //enable the sprite for physics
+       
         game.physics.enable(this.bird, Phaser.Physics.ARCADE);
-        //set the x velocity at -200 which is a little faster than the blocks
-        this.bird.body.velocity.x = -200;
-        //set the bounce for the bird
+        this.bird.body.velocity.x = game.rnd.integerInRange(-300, -100);;
         this.bird.body.bounce.set(2, 2);
     },
     getRandomCactus: function() {
@@ -67,42 +58,41 @@ var StateMain = {
         this.random_cactus.x = game.width - this.random_cactus.width;
 
         game.physics.enable(this.random_cactus, Phaser.Physics.ARCADE);
-        this.random_cactus.body.velocity.x = -150;
+        this.random_cactus.body.velocity.x = world_velocity;
         this.random_cactus.body.gravity.y = 4;
-        //set the bounce so the blocks will react to the dino
         this.random_cactus.body.bounce.set(1,1);
-
-    },
-    jumpKeyDown: function() {
-        if(Math.abs(this.dino.y-this.startY) > 2)
-            return;
-        this.doJump();
-    },
-    duckKeyDown: function() {
-        this.doDuck();
     },
     doJump: function() {
-        this.dino.body.velocity.y = -240;
+        if(Math.abs(this.dino.y-this.startY) > 2)
+            return;
+
+        this.dino.body.velocity.y = -500;
     },
     doDuck: function() {
-        this.dino.body.velocity.y = 240;
+        this.dino.body.velocity.y = 500;
     },
     gameOver: function() {
         game.state.start("StateOver");
     },
     update: function() {
-        this.hero, this.blocks, this.delayOver, null, this
-
+        // Set collisions
         game.physics.arcade.collide(this.dino, this.ground);
         game.physics.arcade.collide(this.dino, this.random_cactus, this.gameOver, null, this);
         game.physics.arcade.collide(this.ground, this.random_cactus);
         game.physics.arcade.collide(this.dino, this.bird, this.gameOver, null, this);
 
-        if (this.random_cactus.x < 0) {
+        // Handle keyboard input
+        if (up_key.isDown || space_key.isDown)
+            this.doJump();
+        if(down_key.isDown)
+            this.doDuck();
+
+        // Get obstacles
+        if (this.random_cactus.x < 0) 
             this.getRandomCactus();
-        }
-        if (!this.bird || this.bird.x < 0) {
+
+        if (!this.bird || (this.bird.x < 0 && game.rnd.integerInRange(0, 100) < 2) )
             this.getBird();
-       }
+            
     }
 }
