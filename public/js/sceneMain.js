@@ -1,4 +1,4 @@
-var up_key, space_key, down_key, world_velocity = -250; 
+var up_key, space_key, down_key, world_velocity = -250, nrOfCacti = 3; 
 
 var StateMain = {
     preload: function() {
@@ -38,6 +38,7 @@ var StateMain = {
 
         ////////////////////////////////////////////////
         // Get random obstacle
+        this.cacti = [3];
         this.getRandomCactus();
     },
     getBird: function() {
@@ -52,15 +53,25 @@ var StateMain = {
         this.bird.body.bounce.set(2, 2);
     },
     getRandomCactus: function() {
-        var cactus_nr = game.rnd.integerInRange(1, 2);
-        this.random_cactus = game.add.sprite(100, 0, "cactus_" + cactus_nr);
-        this.random_cactus.y = this.ground.y-this.random_cactus.height;
-        this.random_cactus.x = game.width - this.random_cactus.width;
+        for(var i = 0; i < nrOfCacti; i++){
+            if(this.cacti[i] && this.cacti[i].x > 2 * game.width/3 || game.rnd.integerInRange(0, 100) < 50)
+                return;
+        }
 
-        game.physics.enable(this.random_cactus, Phaser.Physics.ARCADE);
-        this.random_cactus.body.velocity.x = world_velocity;
-        this.random_cactus.body.gravity.y = 4;
-        this.random_cactus.body.bounce.set(1,1);
+        var cactus =  game.rnd.integerInRange(0, nrOfCacti-1);
+
+        if(!this.cacti[cactus] || this.cacti[cactus].x < 0){
+            var cactus_nr = game.rnd.integerInRange(1, 2);
+            this.cacti[cactus] = game.add.sprite(100, 0, "cactus_" + cactus_nr);
+            this.cacti[cactus].y = this.ground.y-this.cacti[cactus].height;
+            this.cacti[cactus].x = game.width - this.cacti[cactus].width;
+
+            game.physics.enable(this.cacti[cactus], Phaser.Physics.ARCADE);
+            this.cacti[cactus].body.velocity.x = world_velocity;
+            this.cacti[cactus].body.gravity.y = 4;
+            this.cacti[cactus].body.bounce.set(1,1);
+        }
+
     },
     doJump: function() {
         if(Math.abs(this.dino.y-this.startY) > 2)
@@ -77,9 +88,13 @@ var StateMain = {
     update: function() {
         // Set collisions
         game.physics.arcade.collide(this.dino, this.ground);
-        game.physics.arcade.collide(this.dino, this.random_cactus, this.gameOver, null, this);
-        game.physics.arcade.collide(this.ground, this.random_cactus);
         game.physics.arcade.collide(this.dino, this.bird, this.gameOver, null, this);
+        for(var i = 0; i < nrOfCacti; i++){
+            if(this.cacti[i]){
+                game.physics.arcade.collide(this.dino, this.cacti[i], this.gameOver, null, this);
+                game.physics.arcade.collide(this.ground, this.cacti[i]);
+            }
+        }
 
         // Handle keyboard input
         if (up_key.isDown || space_key.isDown)
@@ -88,8 +103,7 @@ var StateMain = {
             this.doDuck();
 
         // Get obstacles
-        if (this.random_cactus.x < 0) 
-            this.getRandomCactus();
+        this.getRandomCactus();
 
         if (!this.bird || (this.bird.x < 0 && game.rnd.integerInRange(0, 100) < 2) )
             this.getBird();
