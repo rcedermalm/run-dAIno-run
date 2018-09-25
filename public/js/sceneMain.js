@@ -1,4 +1,4 @@
-var up_key, space_key, down_key, world_velocity = -250, nrOfCacti = 3; 
+var up_key, space_key, down_key, world_velocity = -250, nrOfCacti = 3, game_score; 
 
 var StateMain = {
     preload: function() {
@@ -10,7 +10,13 @@ var StateMain = {
     },
     create: function() {
         game.stage.backgroundColor = "#ffffff";
-        
+
+        game_score = 0;
+        this.score_text = game.add.text(game.width - game.width*0.1, game.height * .05, ('000' + game_score).slice(-4), { font: "14px Palatino", fill: "#000000", align: "right" });
+        timer = game.time.create(false);
+        timer.loop(100, this.updateGameScore, this);
+        timer.start();
+
         this.ground = game.add.sprite(0, game.height * .9, "ground");
         this.dino = game.add.sprite(game.width*.05, 0, "dino");
         this.dino.y = this.ground.y - this.dino.height;
@@ -41,22 +47,42 @@ var StateMain = {
         this.cacti = [3];
         this.bird = null;
     },
+    updateGameScore: function() {
+        game_score = game_score + 1;
+        this.score_text.setText(('000' + game_score).slice(-4));
+    },
+    canCreateObstacle: function() {
+        var max_x = 5 * game.width / 7;
+        if(this.bird && this.bird.x > max_x )
+            return false;
+
+        for(var i = 0; i < nrOfCacti; i++){
+            if(this.cacti[i] && this.cacti[i].x > max_x)
+                return false;
+        }
+
+        return true;
+    },
     getBird: function() {
-        if(game.rnd.integerInRange(0, 500) > 1 || this.bird && this.bird.x > 0)
+        if(!this.canCreateObstacle())
             return;
-        var rand = game.rnd.integerInRange(0, 3);
-        var birdY = rand * game.height/4;
-        this.bird = game.add.sprite(game.width + 100, birdY, "bird");
+
+        if(game.rnd.integerInRange(0, 300) > 1)
+            return;
+        
+        this.bird = game.add.sprite(game.width + 100, 0, "bird");
+        var rand = game.rnd.integerInRange(2, 5);    
+        this.bird.y = this.ground.y - rand*(this.dino.height/2)
        
         game.physics.enable(this.bird, Phaser.Physics.ARCADE);
-        this.bird.body.velocity.x = game.rnd.integerInRange(-50 + world_velocity, world_velocity - 50);;
+        this.bird.body.velocity.x = world_velocity;
         this.bird.body.bounce.set(2, 2);
     },
     getRandomCactus: function() {
-        for(var i = 0; i < nrOfCacti; i++){
-            if(this.cacti[i] && this.cacti[i].x > 2 * game.width/3 || game.rnd.integerInRange(0, 100) < 50)
-                return;
-        }
+        if(!this.canCreateObstacle())
+            return;
+        if(game.rnd.integerInRange(0, 100) > 20)
+            return;
 
         var cactus =  game.rnd.integerInRange(0, nrOfCacti-1);
 
@@ -64,14 +90,13 @@ var StateMain = {
             var cactus_nr = game.rnd.integerInRange(1, 2);
             this.cacti[cactus] = game.add.sprite(100, 0, "cactus_" + cactus_nr);
             this.cacti[cactus].y = this.ground.y-this.cacti[cactus].height;
-            this.cacti[cactus].x = game.width - this.cacti[cactus].width;
+            this.cacti[cactus].x = game.width;
 
             game.physics.enable(this.cacti[cactus], Phaser.Physics.ARCADE);
             this.cacti[cactus].body.velocity.x = world_velocity;
             this.cacti[cactus].body.gravity.y = 4;
             this.cacti[cactus].body.bounce.set(1,1);
         }
-
     },
     doJump: function() {
         if(Math.abs(this.dino.y-this.startY) > 2)
@@ -83,7 +108,6 @@ var StateMain = {
         this.dino.body.velocity.y = 500;
     },
     gameOver: function() {
-
         game.state.start("StateOver");
     },
     update: function() {
@@ -102,6 +126,10 @@ var StateMain = {
             this.doJump();
         if(down_key.isDown)
             this.doDuck();
+
+        // Make the game faster as the time moves on.
+        if(game_score !== 0 && game_score % 100 === 0)
+            world_velocity = world_velocity*1.005;
 
         // Get obstacles
         this.getRandomCactus();
