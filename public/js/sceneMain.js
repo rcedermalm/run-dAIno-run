@@ -52,7 +52,8 @@ var StateMain = {
         this.score_text.setText(('000' + game_score).slice(-4));
     },
     canCreateObstacle: function() {
-        var max_x = 5 * game.width / 7;
+        var max_x = Math.max(0, game.width - 250 + world_velocity/10);  //5 * game.width / 7;
+        console.log(game.width, max_x, world_velocity)
         if(this.bird && this.bird.x > max_x )
             return false;
 
@@ -129,7 +130,7 @@ var StateMain = {
 
         // Make the game faster as the time moves on.
         if(game_score !== 0 && game_score % 100 === 0)
-            world_velocity = world_velocity*1.005;
+            world_velocity = world_velocity - 5;
 
         // Get obstacles
         this.getRandomCactus();
