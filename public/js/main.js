@@ -11,6 +11,5 @@ window.onload = function()
         game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, "phaser-game");  
 
     game.state.add("StateMain", StateMain);
-    game.state.add("StateOver",StateOver);
     game.state.start("StateMain");
 }

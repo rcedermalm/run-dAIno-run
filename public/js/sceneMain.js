@@ -1,4 +1,4 @@
-var up_key, space_key, down_key, world_velocity = -250, nrOfCacti = 3, game_score; 
+var up_key, space_key, down_key, world_velocity = -250, nrOfCacti = 3, game_score, gameOver = false; 
 
 var StateMain = {
     preload: function() {
@@ -7,15 +7,16 @@ var StateMain = {
         game.load.image("cactus_1", "../images/cactus_1.png");
         game.load.image("cactus_2", "../images/cactus_2.png");
         game.load.image("bird", "../images/bird.png");
+        game.load.image("gameOver", "../images/playAgain.png");
     },
     create: function() {
         game.stage.backgroundColor = "#ffffff";
 
         game_score = 0;
         this.score_text = game.add.text(game.width - game.width*0.1, game.height * .05, ('000' + game_score).slice(-4), { font: "14px Palatino", fill: "#000000", align: "right" });
-        timer = game.time.create(false);
-        timer.loop(100, this.updateGameScore, this);
-        timer.start();
+        this.timer = game.time.create(false);
+        this.timer.loop(100, this.updateGameScore, this);
+        this.timer.start();
 
         this.ground = game.add.sprite(0, game.height * .9, "ground");
         this.dino = game.add.sprite(game.width*.05, 0, "dino");
@@ -52,8 +53,7 @@ var StateMain = {
         this.score_text.setText(('000' + game_score).slice(-4));
     },
     canCreateObstacle: function() {
-        var max_x = Math.max(0, game.width - 250 + world_velocity/10);  //5 * game.width / 7;
-        console.log(game.width, max_x, world_velocity)
+        var max_x = Math.max(0, game.width - 250 + world_velocity/10);
         if(this.bird && this.bird.x > max_x )
             return false;
 
@@ -109,9 +109,34 @@ var StateMain = {
         this.dino.body.velocity.y = 500;
     },
     gameOver: function() {
-        game.state.start("StateOver");
+        gameOver = true;
+        this.freezeGame();
+        space_key.onDown.add(this.reset, this);  
+        game.input.onDown.add(this.reset, this); 
+
+        this.playAgain = game.add.sprite(game.width/2, game.height/2, "gameOver");
+        this.playAgain.anchor.set(0.5, 0.5);
+    },
+    freezeGame: function() {
+        this.dino.body.velocity = 0;
+        if(this.bird)
+            this.bird.body.velocity = 0;
+
+        for(var i = 0; i < nrOfCacti; i++){
+            if(this.cacti[i] && this.cacti[i].body)
+                this.cacti[i].body.velocity = 0;
+        }
+
+        this.timer.stop();
+    },
+    reset: function() {
+        gameOver = false;
+        game.state.start(game.state.current);
     },
     update: function() {
+        if(gameOver)
+            return;
+
         // Set collisions
         game.physics.arcade.collide(this.dino, this.ground);
         game.physics.arcade.collide(this.dino, this.bird, this.gameOver, null, this);
