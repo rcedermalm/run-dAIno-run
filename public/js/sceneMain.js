@@ -224,5 +224,59 @@ var StateMain = {
     },
     getPlaying: function() {
         return this.gameRunning;
+    },
+    getWorldVelocity: function() {
+        return this.world_velocity;
+    },
+    isInTheAir: function() {
+        return (this.dino.y > this.startY);
+    },
+    getNrOfObstaclesPresent: function() {
+        var nrOfObstacles = 0;
+
+        if(this.bird && this.bird.body)
+            nrOfObstacles++;
+        
+        for(var i = 0; i < nrOfCacti; i++){
+            if(this.cacti[i] && this.cacti[i].body){                   
+               nrOfObstacles++;
+            }
+        }
+
+        return nrOfObstacles;
+    },
+    getClosestObstacle: function() {
+        var dist = 1200, temp = 0;
+        var obstacle;
+
+        if(this.bird && this.bird.body){
+            temp = this.bird.x - this.dino.x;
+            if(temp < dist){
+                dist = temp;
+                obstacle = {
+                    distanceToPlayer: temp, 
+                    height: this.bird.body.height,
+                    width: this.bird.body.width,
+                    x = this.bird.x,
+                    y = this.bird.y    
+                };
+            }
+        }
+
+        for(var i = 0; i < nrOfCacti; i++){
+            if(this.cacti[i] && this.cacti[i].body){                   
+                temp = this.cacti[i].x - this.dino.x;
+                if(temp < dist){
+                    dist = temp;
+                    obstacle = {
+                        distanceToPlayer: temp, 
+                        height: this.cacti[i].body.height,
+                        width: this.cacti[i].body.width,
+                        x = this.cacti[i].x,
+                        y = this.cacti[i].y    
+                    };
+                }
+            }
+        }
     }
 }
