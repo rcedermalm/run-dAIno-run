@@ -17,6 +17,7 @@ var StateMain = {
         game.load.image("gameOver", "../images/playAgain.png");
     },
     create: function() {
+        game.stage.disableVisibilityChange = true;
         game.stage.backgroundColor = "#ffffff";
         this.gameRunning = true;
         this.world_velocity = start_world_velocity;
@@ -65,6 +66,18 @@ var StateMain = {
         // Set random obstacles
         this.cacti = [nrOfCacti];
         this.bird = null;
+
+        ////////////////////////////////////////////////
+        // AI related
+        this.AIisRunning = false;
+        this.AItimer = game.time.create(false);
+        this.AItimer.loop(500, this.runAI, this);
+        this.AItimer.start();
+    },
+    runAI: function() {
+        // Handle AI
+        if(this.AIisRunning)
+            getAIaction();
     },
     changeOfTextures: function() {
         this.useFirstRunning = !this.useFirstRunning;
@@ -187,8 +200,10 @@ var StateMain = {
         game.state.start(game.state.current);
     },
     update: function() {
-        if(!this.gameRunning)
-            return;
+        if(!this.AIisRunning){
+            initializeAgent();
+            this.AIisRunning = true;
+        }
 
         // Set collisions
         game.physics.arcade.collide(this.dino, this.ground);
@@ -199,7 +214,11 @@ var StateMain = {
                 game.physics.arcade.collide(this.ground, this.cacti[i]);
             }
         }
-
+        
+        if(!this.gameRunning){
+              return;
+        }
+   
         // Handle keyboard input
         if (up_key.isDown || space_key.isDown)
             this.doJump();
@@ -207,10 +226,10 @@ var StateMain = {
             this.doDuck();
 
         // Make the game faster as the time moves on.
-        if(this.game_score !== 0 && this.game_score % 100 === 0){
-            this.world_velocity = this.world_velocity - 5;
-            this.updateVelocities();
-        }
+        // if(this.game_score !== 0 && this.game_score % 100 === 0){
+        //     this.world_velocity = this.world_velocity - 5;
+        //     this.updateVelocities();
+        // }
 
         // Get obstacles
         this.getRandomCactus();
@@ -231,6 +250,55 @@ var StateMain = {
     isInTheAir: function() {
         return (this.dino.y > this.startY);
     },
+    getYIfBelowOrAboveObstacle: function(){
+        var closest_obstacle, temp, dist = 1200;
+
+        if(this.bird && this.bird.body){
+            temp = Math.sqrt(Math.pow(this.bird.x - this.dino.x, 2) + Math.pow(this.bird.y - this.dino.y, 2));
+            if(temp < dist){
+                dist = temp;
+                closest_obstacle = {
+                    height: this.bird.body.height,
+                    width: this.bird.body.width,
+                    x: this.bird.x,
+                    y: this.bird.y    
+                };
+            }
+        }
+
+        for(var i = 0; i < nrOfCacti; i++){
+            if(this.cacti && this.cacti[i] && this.cacti[i].body){                   
+                temp = Math.sqrt(Math.pow(this.cacti[i].x - this.dino.x, 2) + Math.pow(this.cacti[i].y - this.dino.y, 2));
+                if(temp < dist){
+                    dist = temp;
+                    closest_obstacle = {
+                        height: this.cacti[i].body.height,
+                        width: this.cacti[i].body.width,
+                        x: this.cacti[i].x,
+                        y: this.cacti[i].y    
+                    };
+                }
+            }
+        }
+
+        // No obstacles close
+        if(dist === 1200)
+            return 0;
+
+        // Not on the same x positions
+        var diffX = this.dino.x - closest_obstacle.x;
+        if(!(diffX > 0 && diffX < closest_obstacle.width))
+            return 0;
+
+        //Negative: obstacle beneath, positive: obstacle above 
+        var realDiffY = 0, diffY = this.dino.y - closest_obstacle.y; 
+        if(diffY < 0){
+            realDiffY = closest_obstacle.y - (this.dino.y + this.dino.height);
+        } else {
+            realDiffY = this.dino.y - (closest_obstacle.y + closest_obstacle.height);
+        }
+        return realDiffY;
+    },
     getNrOfObstaclesPresent: function() {
         var nrOfObstacles = 0;
 
@@ -249,34 +317,48 @@ var StateMain = {
         var dist = 1200, temp = 0;
         var obstacle;
 
-        if(this.bird && this.bird.body){
-            temp = this.bird.x - this.dino.x;
+        if(this.bird && this.bird.body && this.bird.x > this.dino.x){
+            temp = Math.sqrt(Math.pow(this.bird.x - this.dino.x, 2) + Math.pow(this.bird.y - this.dino.y, 2));
             if(temp < dist){
                 dist = temp;
                 obstacle = {
-                    distanceToPlayer: temp, 
+                    distanceInX: this.bird.x - this.dino.x, 
+                    distanceInY: this.bird.y - this.dino.y,
                     height: this.bird.body.height,
                     width: this.bird.body.width,
-                    x = this.bird.x,
-                    y = this.bird.y    
+                    x: this.bird.x,
+                    y: this.bird.y    
                 };
             }
         }
 
         for(var i = 0; i < nrOfCacti; i++){
-            if(this.cacti[i] && this.cacti[i].body){                   
-                temp = this.cacti[i].x - this.dino.x;
+            if(this.cacti && this.cacti[i] && this.cacti[i].body && this.cacti[i].x > this.dino.x){                   
+                temp = Math.sqrt(Math.pow(this.cacti[i].x - this.dino.x, 2) + Math.pow(this.cacti[i].y - this.dino.y, 2));
                 if(temp < dist){
                     dist = temp;
                     obstacle = {
-                        distanceToPlayer: temp, 
+                        distanceInX: this.cacti[i].x - this.dino.x, 
+                        distanceInY: this.cacti[i].y - this.dino.y, 
                         height: this.cacti[i].body.height,
                         width: this.cacti[i].body.width,
-                        x = this.cacti[i].x,
-                        y = this.cacti[i].y    
+                        x: this.cacti[i].x,
+                        y: this.cacti[i].y    
                     };
                 }
             }
         }
+
+        if(dist == 1200){
+            obstacle = {
+                distanceInX: 800, 
+                distanceInY: 800, 
+                height: 0,
+                width: 0,
+                x: 800,
+                y: 800    
+            };
+        }
+        return obstacle;
     }
 }

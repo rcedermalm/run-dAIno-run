@@ -9,9 +9,9 @@ window.onload = function()
         game = new Phaser.Game(600, 150, Phaser.AUTO, "phaser-game");
     else      
         game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, "phaser-game");  
+    
+    createNewAgent();
 
     game.state.add("StateMain", StateMain);
     game.state.start("StateMain");
-
-    runAIAgent();
 }
