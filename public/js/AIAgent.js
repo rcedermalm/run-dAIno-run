@@ -1,19 +1,21 @@
 var training_round = 0,
     best_score = 0,
-    NR_OF_FEATURES = 6,
+    NR_OF_FEATURES = 4,
     TOTAL_STATES = Math.pow(2, NR_OF_FEATURES), // since the features are binary classified
     NR_OF_ACTIONS = 2,
     Qtable = undefined,
+    visitedState = undefined,
     features = undefined,
     currentState = 0,
     newState = 0,
     lastAction = 2,
     GAMMA = 0.99,// # decay rate of past observations original 0.99
     LEARNING_RATE = 0.5,
-    EXPLORATION_RATE = 0.6,
-    MIN_EXPLORATION_RATE = 0.001,
+    EXPLORATION_RATE = 0.4,
+    MIN_EXPLORATION_RATE = 0.1,
     isTraining = true,
-    NR_OF_TRAINING_ROUNDS = 100;
+    NR_OF_TRAINING_ROUNDS = 1000,
+    NR_OF_LEARNING_ROUNDS = 100000;
 
 
 // Create a new agent
@@ -26,6 +28,14 @@ function createNewAgent(){
         Qtable[state] = new Array(NR_OF_ACTIONS);
         for(var action = 0; action < NR_OF_ACTIONS; action++){
             Qtable[state][action] = 0;
+        }
+    }
+
+    visitedState = new Array(TOTAL_STATES);
+    for(var state = 0; state < TOTAL_STATES; state++){
+        visitedState[state] = new Array(NR_OF_ACTIONS);
+        for(var action = 0; action < NR_OF_ACTIONS; action++){
+            visitedState[state][action] = 0;
         }
     }
 }
@@ -72,19 +82,19 @@ function getAIaction() {
 
 // Choose which action to take, it could be random or not
 function chooseAction(state){
-    var rand = Math.random();
+    
 
     var actionIdx = 0;
     var inAir = StateMain.isInTheAir();
 
     if(isTraining){
         do {
-
+            var rand = Math.random();
             if(rand < EXPLORATION_RATE){
                 // Act randomly
                 actionIdx = Math.floor(Math.random() * NR_OF_ACTIONS);
             } else {
-                // Act according to policy
+                // Act according to policy         
                 var qState = Qtable[state];
                 actionIdx = qState.indexOf(Math.max(...qState));
             }
@@ -108,6 +118,8 @@ function doAction(actionIdx){
     switch(actionIdx){
         case 0:
             StateMain.doJump();
+            console.log("Idx: ", currentState);
+            console.log("State: ", Qtable[currentState]);
             break;
         case 1:
             // Do nothing
@@ -125,20 +137,31 @@ function updateQtable(QstateIdx, actionIdx, newQstateIdx) {
 
     var maxQnew = Math.max(...qNewState);
 
-    var oldValue = (1-LEARNING_RATE) * qState[actionIdx];
-    var newValue = LEARNING_RATE * (getReward() + GAMMA * maxQnew);
-    qState[actionIdx] = oldValue + newValue;
+    if(isTraining){
+        var oldValue = (1-LEARNING_RATE) * qState[actionIdx];
+        var newValue = LEARNING_RATE * (getReward() + GAMMA * maxQnew);
+        qState[actionIdx] = oldValue + newValue;
+        if(visitedState[QstateIdx][actionIdx] > NR_OF_LEARNING_ROUNDS){
+            if(LEARNING_RATE > MIN_EXPLORATION_RATE)
+                LEARNING_RATE = LEARNING_RATE - 0.00001;
+        }
+
+        visitedState[QstateIdx][actionIdx]++;
+    }
+    
 }
 
 function getReward(){
-    var reward = 0;
+    
     if(!StateMain.getPlaying())
         return -10;
 
+    var reward = 0.1; // Survival reward
+
     var y = StateMain.getYIfBelowOrAboveObstacle();
     if(y === 0)
-        return 1;
-    return y/10;
+        return reward;
+    return reward + y/10;
     
 }
 
@@ -146,31 +169,28 @@ function getReward(){
 function calculateFeatures(){
     // Chosen features:
     // * distance to closest obstacle, x
-    // * distance to closest obstacle, y
+    // * distance to closest obstacle'end in x
     // * height of closest obstacle
-    // * width of closest obstacle
     // * if dino is in the air
     // * number of obstacles present
 
     var idx = 0;
     var closestObstacle = StateMain.getClosestObstacle();
     features[idx++] = closestObstacle.distanceInX;
-    features[idx++] = closestObstacle.distanceInY;
-    features[idx++] = closestObstacle.height;
-    features[idx++] = closestObstacle.width;
+    features[idx++] = closestObstacle.distanceToEndX;
+    features[idx++] = closestObstacle.y;
     features[idx++] = StateMain.isInTheAir();
-    features[idx++] = StateMain.getNrOfObstaclesPresent();
+   // features[idx++] = StateMain.getNrOfObstaclesPresent();
 }
 
 // Get the state from the features
 function getState(currentFeatures) {
     var stateIndex = 0;
-    if (currentFeatures[0] > 100) stateIndex += 1; // distance to closest obstacle, x
-    if (currentFeatures[1] < 50) stateIndex += 2; // distance to closest obstacle, y
-    if (currentFeatures[2] > 25) stateIndex += 4; // height of closest obstacle
-    if (currentFeatures[3] > 30) stateIndex += 8; // width of closest obstacle
-    if (currentFeatures[4]) stateIndex += 16; // if dino is in the air
-    if (currentFeatures[5] > 1) stateIndex += 32; // number of obstacles present
+    if (currentFeatures[0] > 65) stateIndex += 1; // distance to closest obstacle, x
+    if (currentFeatures[1] < 150) stateIndex += 2; // distance to closest obstacle's end, x
+    if (currentFeatures[2] > 100) stateIndex += 4; // y value of closest obstacle
+    if (currentFeatures[3]) stateIndex += 8; // if dino is in the air
+ //   if (currentFeatures[4] > 1) stateIndex += 16; // number of obstacles present
     return stateIndex;
 }
 
@@ -189,14 +209,38 @@ function updateAIinfo(){
     var trainingElement = document.getElementById('training-round');
     var scoreElement = document.getElementById('best-score');
     var unvisitedElement = document.getElementById('unvisited-states');
+    var learningElement = document.getElementById('learning-rate');
+    var explorationElement = document.getElementById('exploration-rate');
 
     trainingElement.innerHTML = training_round;
     scoreElement.innerHTML = best_score;
+    learningElement.innerHTML = LEARNING_RATE;
+    explorationElement.innerHTML = EXPLORATION_RATE;
     unvisitedElement.innerHTML = getNrOfUnvisitedStates();
+
 }
 
 function boxChecked(){
     var checkBox = document.getElementById("is-training-box");
     isTraining = checkBox.checked;
+}
+
+function saveAgent(){
+    var agent = {
+        training_round: training_round,
+        best_score: best_score,
+        Qtable: Qtable,
+    }
+
+    var json_data = JSON.stringify(agent);
+    downloadAgent(json_data, "agent.txt");
+}
+
+function downloadAgent(content, fileName) {
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: 'text/plain'});
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
 }
 

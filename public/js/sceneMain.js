@@ -71,7 +71,7 @@ var StateMain = {
         // AI related
         this.AIisRunning = false;
         this.AItimer = game.time.create(false);
-        this.AItimer.loop(500, this.runAI, this);
+        this.AItimer.loop(100, this.runAI, this);
         this.AItimer.start();
     },
     runAI: function() {
@@ -248,7 +248,7 @@ var StateMain = {
         return this.world_velocity;
     },
     isInTheAir: function() {
-        return (this.dino.y > this.startY);
+        return (this.dino.y < this.startY);
     },
     getYIfBelowOrAboveObstacle: function(){
         var closest_obstacle, temp, dist = 1200;
@@ -323,10 +323,7 @@ var StateMain = {
                 dist = temp;
                 obstacle = {
                     distanceInX: this.bird.x - this.dino.x, 
-                    distanceInY: this.bird.y - this.dino.y,
-                    height: this.bird.body.height,
-                    width: this.bird.body.width,
-                    x: this.bird.x,
+                    distanceToEndX: this.bird.x + this.bird.body.width - this.dino.x,
                     y: this.bird.y    
                 };
             }
@@ -339,10 +336,7 @@ var StateMain = {
                     dist = temp;
                     obstacle = {
                         distanceInX: this.cacti[i].x - this.dino.x, 
-                        distanceInY: this.cacti[i].y - this.dino.y, 
-                        height: this.cacti[i].body.height,
-                        width: this.cacti[i].body.width,
-                        x: this.cacti[i].x,
+                        distanceToEndX: this.cacti[i].x + this.cacti[i].body.width - this.dino.x,
                         y: this.cacti[i].y    
                     };
                 }
@@ -352,10 +346,7 @@ var StateMain = {
         if(dist == 1200){
             obstacle = {
                 distanceInX: 800, 
-                distanceInY: 800, 
-                height: 0,
-                width: 0,
-                x: 800,
+                distanceToEndX: 1000,
                 y: 800    
             };
         }
