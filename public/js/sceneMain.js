@@ -2,6 +2,7 @@ var up_key, space_key, down_key, start_world_velocity = -250, nrOfCacti = 3, AIR
 
 var StateMain = {
     preload: function() {
+        /*
         game.load.image("ground_visible", "../images/ground.png");
         game.load.image("ground", "../images/ground_physic.png");
         game.load.image("dino", "../images/dino.png");
@@ -15,6 +16,20 @@ var StateMain = {
         game.load.image("bird_1", "../images/bird_1.png");
         game.load.image("bird_2", "../images/bird_2.png");
         game.load.image("gameOver", "../images/playAgain.png");
+        */
+       game.load.image("ground_visible", "./public/images/ground.png");
+       game.load.image("ground", "./public/images/ground_physic.png");
+       game.load.image("dino", "./public/images/dino.png");
+       game.load.image("dino_dead", "./public/images/dino_dead.png");
+       game.load.image("dino_running_1", "./public/images/dino_running1.png");
+       game.load.image("dino_running_2", "./public/images/dino_running2.png");
+       game.load.image("cactus_1", "./public/images/cactus_1.png");
+       game.load.image("cactus_2", "./public/images/cactus_2.png");
+       game.load.image("cactus_3", "./public/images/cactus_3.png");
+       game.load.image("cactus_4", "./public/images/cactus_4.png");
+       game.load.image("bird_1", "./public/images/bird_1.png");
+       game.load.image("bird_2", "./public/images/bird_2.png");
+       game.load.image("gameOver", "./public/images/playAgain.png");
     },
     create: function() {
         game.stage.disableVisibilityChange = true;
