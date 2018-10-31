@@ -8,20 +8,27 @@
     <script type="text/javascript" src="./js/sceneMain.js"></script>
     <script type="text/javascript" src="./js/main.js"></script>
     <script type="text/javascript" src="./js/AIAgent.js"></script>
+    <script type="text/javascript" src="./data/agents.json"></script>
     <link rel="stylesheet" type="text/css" href="./css/style.css">
     <link rel="icon" type="image/gif" href="./images/dino.png" />
 </head>
 <body>
     <h1>Run dAIno run!</h1>
+    <h2>An AI learning to play an endless runner game using Q-learning</h2>
     <div id="phaser-game"></div>
-    <div id="ai-info">
-        <div>Training round: <span id="training-round">0</span></div>
-        <div>Best score: <span id="best-score">0</span></div>
-        <div>Unvisited states: <span id="unvisited-states">0</span></div>
-        <div>Learning rate: <span id="learning-rate">0</span></div>
-        <div>Exploration rate: <span id="exploration-rate">0</span></div>
-        <div>Training AI: <input type="checkbox" id="is-training-box" onclick="boxChecked()" checked></div>
-        <div><button type="button" onclick="saveAgent()">Save Agent</button></div>
+    <div id="play-or-ai">
+        <p id="play-phrase">You are currently in charge, play the game!</p>
+        <p id="AI-phrase" class="no-show">The AI are currently in charge... Watch as it takes over the world..</p>
+        <div id="AI-btn"><button type="button" onclick="useAgent(0)">Use the trained AI</button></div>
+        <div id="play-btn" class="no-show"><button type="button" onclick="playGame()">Play the Game Yourself</button></div>
+        <p id="velocity-checkbox"><input type="checkbox" id="increasing-velocity" onclick="increaseVelocity()"> Hard mode (increasing velocity)</p>
+    </div>
+    <p id="separator">...</p>
+    <div id="abstract">
+        <p>This project was made during the course TNM095 Artificial Intelligence in Interactive Media at Linkoping University. </p>
+        <p>A version of the game created as an offline game for Google Chrome was implemented using Javascript and the framework Phaser.io. The game is an endless runner where the player plays a dinosaur trying to survive in the desert. This is done by jumping over or moving below different kinds of obstacles. </p>
+        <p>An AI agent was trained to play the game using reinforcement learning and Q-learning. Q-learning is a part of machine learning where the agent learns to optimize the policy by the rewards given. It explores the world by doing an action and seeing what reward it gets. The world is represented as different states and for each state the agent can make a few actions. In this case the state is represented by the distance to the closest obstacle, the distance to the end of the closest obstacle, the y-value of the closest obstacle and if the player is in the air or not. The actions possible are jumping or doing nothing. </p>
+        <p>Q-learning was proven to be a good method for this kind of problem. The agent was able to learn the game very good and could possible survive in it forever. The agent also handles a change in velocity of the game pretty well but to really make it work, another action, like being able to duck and therefore fall faster to the ground, needs to be introduced. </p>
     </div>
 </body>
 </html>

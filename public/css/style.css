@@ -1,7 +1,60 @@
 body {
     text-align: center;
+    color: #5d5752;
 }
 
 canvas {
     margin: 0 auto;
+}
+
+#phaser-game{
+    margin-top: 100px;
+}
+
+div {
+    padding: 2px;
+}
+
+h1 {
+    margin-bottom: 0;
+}
+
+h2 {
+    font-size: 16px;
+    font-weight: normal;
+}
+
+#play-or-ai {
+    margin-top: 20px;
+}
+
+#abstract {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+button {
+    background-color: #5d5752;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 2px;
+}
+
+button:hover, select:hover {
+    cursor: pointer;
+}
+
+.no-show {
+    display: none;
+}
+
+#separator {
+    font-size: 40px;
+    margin:0;
+    padding:0;
+}
+
+#velocity-checkbox{
+    margin: 10px 0 0 0;
 }

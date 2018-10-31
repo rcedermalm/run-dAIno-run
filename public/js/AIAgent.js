@@ -12,15 +12,20 @@ var training_round = 0,
     GAMMA = 0.99,// # decay rate of past observations original 0.99
     LEARNING_RATE = 0.5,
     EXPLORATION_RATE = 0.4,
-    MIN_EXPLORATION_RATE = 0.1,
-    isTraining = true,
+    MIN_RATE = 0.1,
+    isExploring = true,
+    isLearning = true,
     NR_OF_TRAINING_ROUNDS = 1000,
-    NR_OF_LEARNING_ROUNDS = 100000;
+    NR_OF_LEARNING_ROUNDS = 100000,
+    all_agents = undefined,
+    agent_index = 0,
+    current_agent = undefined;
 
 
 // Create a new agent
 function createNewAgent(){
     training_round = 0;
+    best_score = 0;
 
     // Initialize Qtable to -10 for all states and their actions.
     Qtable = new Array(TOTAL_STATES);
@@ -38,6 +43,15 @@ function createNewAgent(){
             visitedState[state][action] = 0;
         }
     }
+
+    current_agent = {
+        training_round: training_round,
+        best_score: best_score,
+        agent_index: all_agents.length,
+        Qtable: Qtable
+    }
+
+    all_agents.push(current_agent);
 }
 
 // Initialize the agent, calculate features and the state
@@ -77,17 +91,14 @@ function getAIaction() {
     if(StateMain.getGameScore() > best_score)
         best_score = StateMain.getGameScore();
 
-    updateAIinfo();
 }
 
 // Choose which action to take, it could be random or not
 function chooseAction(state){
-    
-
     var actionIdx = 0;
     var inAir = StateMain.isInTheAir();
 
-    if(isTraining){
+    if(isExploring){
         do {
             var rand = Math.random();
             if(rand < EXPLORATION_RATE){
@@ -99,15 +110,16 @@ function chooseAction(state){
                 actionIdx = qState.indexOf(Math.max(...qState));
             }
         } while(inAir && actionIdx == 0);
+
+        if(training_round > NR_OF_TRAINING_ROUNDS){
+            if(EXPLORATION_RATE > MIN_RATE)
+                EXPLORATION_RATE = EXPLORATION_RATE - 0.001;
+        }
+
     } else {
         // Act according to policy
         var qState = Qtable[state];
         actionIdx = qState.indexOf(Math.max(...qState));
-    }
-
-    if(training_round > NR_OF_TRAINING_ROUNDS){
-        if(EXPLORATION_RATE > MIN_EXPLORATION_RATE)
-            EXPLORATION_RATE = EXPLORATION_RATE - 0.001;
     }
 
     // return index of chosen action.
@@ -118,41 +130,34 @@ function doAction(actionIdx){
     switch(actionIdx){
         case 0:
             StateMain.doJump();
-            console.log("Idx: ", currentState);
-            console.log("State: ", Qtable[currentState]);
             break;
         case 1:
             // Do nothing
-            break;
-        case 2:
-            StateMain.doDuck();
             break;
     }
 }
 
 // Update the Q-table
 function updateQtable(QstateIdx, actionIdx, newQstateIdx) {
-    var qState = Qtable[QstateIdx];
-    var qNewState =  Qtable[newQstateIdx];
+    if(isLearning){
+        var qState = Qtable[QstateIdx];
+        var qNewState =  Qtable[newQstateIdx];
 
-    var maxQnew = Math.max(...qNewState);
+        var maxQnew = Math.max(...qNewState);
 
-    if(isTraining){
         var oldValue = (1-LEARNING_RATE) * qState[actionIdx];
         var newValue = LEARNING_RATE * (getReward() + GAMMA * maxQnew);
         qState[actionIdx] = oldValue + newValue;
         if(visitedState[QstateIdx][actionIdx] > NR_OF_LEARNING_ROUNDS){
-            if(LEARNING_RATE > MIN_EXPLORATION_RATE)
+            if(LEARNING_RATE > MIN_RATE)
                 LEARNING_RATE = LEARNING_RATE - 0.00001;
         }
 
-        visitedState[QstateIdx][actionIdx]++;
+        visitedState[QstateIdx][actionIdx]++;  
     }
-    
 }
 
 function getReward(){
-    
     if(!StateMain.getPlaying())
         return -10;
 
@@ -161,8 +166,7 @@ function getReward(){
     var y = StateMain.getYIfBelowOrAboveObstacle();
     if(y === 0)
         return reward;
-    return reward + y/10;
-    
+    return reward + y/10; 
 }
 
 // Calculate the features
@@ -172,7 +176,6 @@ function calculateFeatures(){
     // * distance to closest obstacle'end in x
     // * height of closest obstacle
     // * if dino is in the air
-    // * number of obstacles present
 
     var idx = 0;
     var closestObstacle = StateMain.getClosestObstacle();
@@ -180,7 +183,6 @@ function calculateFeatures(){
     features[idx++] = closestObstacle.distanceToEndX;
     features[idx++] = closestObstacle.y;
     features[idx++] = StateMain.isInTheAir();
-   // features[idx++] = StateMain.getNrOfObstaclesPresent();
 }
 
 // Get the state from the features
@@ -190,50 +192,20 @@ function getState(currentFeatures) {
     if (currentFeatures[1] < 150) stateIndex += 2; // distance to closest obstacle's end, x
     if (currentFeatures[2] > 100) stateIndex += 4; // y value of closest obstacle
     if (currentFeatures[3]) stateIndex += 8; // if dino is in the air
- //   if (currentFeatures[4] > 1) stateIndex += 16; // number of obstacles present
     return stateIndex;
 }
 
-function getNrOfUnvisitedStates(){
-    var unvisited = 0;
-    for(var state = 0; state < TOTAL_STATES; state++){
-        for(var action = 0; action < NR_OF_ACTIONS; action++){
-            if(Qtable[state][action] == 0)
-                unvisited++;
-        }
-    }
-    return unvisited;
-}
-
-function updateAIinfo(){
-    var trainingElement = document.getElementById('training-round');
-    var scoreElement = document.getElementById('best-score');
-    var unvisitedElement = document.getElementById('unvisited-states');
-    var learningElement = document.getElementById('learning-rate');
-    var explorationElement = document.getElementById('exploration-rate');
-
-    trainingElement.innerHTML = training_round;
-    scoreElement.innerHTML = best_score;
-    learningElement.innerHTML = LEARNING_RATE;
-    explorationElement.innerHTML = EXPLORATION_RATE;
-    unvisitedElement.innerHTML = getNrOfUnvisitedStates();
-
-}
-
-function boxChecked(){
-    var checkBox = document.getElementById("is-training-box");
-    isTraining = checkBox.checked;
-}
-
 function saveAgent(){
-    var agent = {
-        training_round: training_round,
-        best_score: best_score,
-        Qtable: Qtable,
-    }
+    // Update the current agent
+    var curr_idx = all_agents.findIndex(agent => agent.agent_index === agent_index);
+    all_agents[curr_idx].training_round = training_round;
+    all_agents[curr_idx].best_score = best_score;
+    all_agents[curr_idx].Qtable = Qtable;
 
-    var json_data = JSON.stringify(agent);
-    downloadAgent(json_data, "agent.txt");
+    // Save and download
+    var json_data = JSON.stringify(all_agents);
+    var file_data = "agents = '[" + json_data + "]';";
+    downloadAgent(file_data, "agents.json");
 }
 
 function downloadAgent(content, fileName) {
@@ -242,5 +214,44 @@ function downloadAgent(content, fileName) {
     a.href = URL.createObjectURL(file);
     a.download = fileName;
     a.click();
+}
+
+function readOldAgents(){
+    all_agents = JSON.parse(agents);
+}
+
+function useAgent(curr_idx){
+    StateMain.reset();
+    createNewAgent();
+    AIRunning = true;
+
+    agent_index = all_agents[curr_idx].agent_index;
+    training_round = all_agents[curr_idx].training_round;
+    best_score = all_agents[curr_idx].best_score;
+    Qtable = all_agents[curr_idx].Qtable;
+    isExploring = false;
+    isLearning = false;
+
+    var element = document.getElementById("play-btn");
+    element.classList.remove("no-show");
+    element = document.getElementById("AI-btn");
+    element.classList.add("no-show");
+    element = document.getElementById("AI-phrase");
+    element.classList.remove("no-show");
+    element = document.getElementById("play-phrase");
+    element.classList.add("no-show");
+}
+
+function playGame(){
+    AIRunning = false;
+    StateMain.reset();
+    var element = document.getElementById("play-btn");
+    element.classList.add("no-show");
+    element = document.getElementById("AI-btn");
+    element.classList.remove("no-show");
+    element = document.getElementById("AI-phrase");
+    element.classList.add("no-show");
+    element = document.getElementById("play-phrase");
+    element.classList.remove("no-show");
 }
 

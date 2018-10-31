@@ -1,4 +1,4 @@
-var up_key, space_key, down_key, start_world_velocity = -250, nrOfCacti = 3; 
+var up_key, space_key, down_key, start_world_velocity = -250, nrOfCacti = 3, AIRunning = false, increasingVelocity = false; 
 
 var StateMain = {
     preload: function() {
@@ -69,15 +69,17 @@ var StateMain = {
 
         ////////////////////////////////////////////////
         // AI related
-        this.AIisRunning = false;
-        this.AItimer = game.time.create(false);
-        this.AItimer.loop(100, this.runAI, this);
-        this.AItimer.start();
+        if(AIRunning){
+            this.AIisRunning = false;
+            this.AItimer = game.time.create(false);
+            this.AItimer.loop(100, this.runAI, this);
+            this.AItimer.start();
+        }
     },
     runAI: function() {
         // Handle AI
-        if(this.AIisRunning)
-            getAIaction();
+       if(this.AIisRunning)
+           getAIaction();
     },
     changeOfTextures: function() {
         this.useFirstRunning = !this.useFirstRunning;
@@ -165,7 +167,7 @@ var StateMain = {
     doJump: function() {
         if(Math.abs(this.dino.y-this.startY) > 2)
             return;
-            
+        
         this.dino.body.velocity.y = -500;
     },
     doDuck: function() {
@@ -200,7 +202,7 @@ var StateMain = {
         game.state.start(game.state.current);
     },
     update: function() {
-        if(!this.AIisRunning){
+        if( AIRunning && !this.AIisRunning){
             initializeAgent();
             this.AIisRunning = true;
         }
@@ -226,10 +228,10 @@ var StateMain = {
             this.doDuck();
 
         // Make the game faster as the time moves on.
-        // if(this.game_score !== 0 && this.game_score % 100 === 0){
-        //     this.world_velocity = this.world_velocity - 5;
-        //     this.updateVelocities();
-        // }
+        if(increasingVelocity && this.game_score !== 0 && this.game_score % 100 === 0){
+              this.world_velocity = this.world_velocity - 5;
+              this.updateVelocities();
+        }
 
         // Get obstacles
         this.getRandomCactus();
@@ -352,4 +354,8 @@ var StateMain = {
         }
         return obstacle;
     }
+}
+
+function increaseVelocity(){
+    increasingVelocity = !increasingVelocity;
 }
