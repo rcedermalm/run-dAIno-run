@@ -2,7 +2,7 @@ var up_key, space_key, down_key, start_world_velocity = -250, nrOfCacti = 3, AIR
 
 var StateMain = {
     preload: function() {
-        /*
+        /* CHANGE TO THIS TO MAKE IT WORK ON LOCAL HOST
         game.load.image("ground_visible", "../images/ground.png");
         game.load.image("ground", "../images/ground_physic.png");
         game.load.image("dino", "../images/dino.png");
@@ -373,4 +373,5 @@ var StateMain = {
 
 function increaseVelocity(){
     increasingVelocity = !increasingVelocity;
+    StateMain.reset();
 }
